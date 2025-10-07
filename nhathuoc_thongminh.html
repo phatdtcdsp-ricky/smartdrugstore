@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Nhà thuốc thông minh — Mẫu hoàn chỉnh</title>
+<style>
+  :root{
+    --primary:#0b74de;
+    --accent:#06b6d4;
+    --muted:#6b7280;
+    --card:#ffffff;
+    --bg:#f3f8ff;
+    --success:#e6fff2;
+  }
+  *{box-sizing:border-box;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial}
+  body{margin:0;background:linear-gradient(180deg,#eaf6ff 0%, #f3f8ff 100%);color:#03263f;padding:18px}
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{
+    width:54px;height:54px;border-radius:10px;background:linear-gradient(135deg,var(--primary),var(--accent));
+    display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:20px;box-shadow:0 6px 18px rgba(11,26,60,0.12)
+  }
+  h1{margin:0;font-size:18px}
+  .subtitle{color:var(--muted);font-size:13px}
+  .layout{display:grid;grid-template-columns:380px 1fr;gap:18px}
+  .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 8px 30px rgba(9,30,63,0.06);border:1px solid rgba(11,26,60,0.03)}
+  .search input{width:100%;padding:10px;border-radius:10px;border:1px solid #e6eef8}
+  .filters{display:flex;gap:8px;margin-top:10px}
+  select,button{padding:8px;border-radius:10px;border:1px solid #e6eef8;background:white;cursor:pointer}
+  button.primary{background:var(--primary);color:white;border:none}
+  .list{margin-top:12px;max-height:68vh;overflow:auto}
+  .group{padding:10px;border-radius:8px;border:1px solid #eef4fb;margin-bottom:8px;cursor:pointer;display:flex;flex-direction:column;gap:6px}
+  .group h3{margin:0;font-size:14px}
+  .group p{margin:0;color:var(--muted);font-size:13px}
+  main .section{margin-bottom:18px}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:10px;border-bottom:1px dashed #eef4fb;text-align:left;font-size:14px}
+  th{color:var(--muted);font-weight:600}
+  .symptoms{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;max-height:36vh;overflow:auto;padding-right:6px}
+  label.inline{display:flex;align-items:center;gap:8px}
+  .small{font-size:13px;color:var(--muted)}
+  .result{background:var(--success);border:1px solid #bfeacc;padding:12px;border-radius:10px;margin-top:10px}
+  .controls{display:flex;gap:8px;flex-wrap:wrap}
+  .highlight{box-shadow:0 0 0 3px rgba(11,116,222,0.08),0 6px 18px rgba(11,26,60,0.06);border-color:rgba(11,116,222,0.2)}
+  .filter-chip{display:inline-block;padding:6px 10px;border-radius:999px;background:rgba(11,116,222,0.08);color:var(--primary);font-size:13px;margin-right:6px}
+  .img-hero{width:100%;height:120px;border-radius:8px;background:linear-gradient(90deg, rgba(11,116,222,0.08), rgba(6,182,212,0.06));display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+  .img-hero svg{width:84px;height:84px;opacity:0.95}
+  .print-area{display:none}
+  @media print{
+    header, .filters, #groupList, .controls, button, .small, footer{display:none}
+    .print-area{display:block}
+    body{background:white}
+    .card{box-shadow:none;border:none}
+  }
+  @media(max-width:980px){.layout{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">NH</div>
+      <div>
+        <h1>Nhà thuốc thông minh</h1>
+        <div class="subtitle">Khảo sát — Gợi ý nhóm thuốc — In / Xuất</div>
+      </div>
+    </div>
+    <div class="controls">
+      <button id="exportJson">Xuất JSON danh mục</button>
+      <button id="exportCSV" class="primary">Xuất khảo sát → Excel</button>
+      <button id="printBtn">In phiếu (PDF)</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- LEFT: CATALOG -->
+    <aside class="card">
+      <div class="img-hero">
+        <!-- Pharmacy SVG -->
+        <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+          <g fill="none" stroke="#0b74de" stroke-width="1.6">
+            <rect x="6" y="10" width="52" height="40" rx="6" fill="#eaf6ff" stroke="none"></rect>
+            <path d="M16 30h32" stroke="#0b74de" stroke-width="1.6"></path>
+            <circle cx="22" cy="22" r="3" fill="#06b6d4" stroke="none"></circle>
+            <path d="M32 18v14M26 24h12" stroke="#0b74de" stroke-linecap="round" stroke-width="2"/>
+          </g>
+        </svg>
+      </div>
+
+      <div class="search"><input id="q" placeholder="Tìm theo nhóm / hoạt chất..." /></div>
+      <div class="filters">
+        <select id="groupFilter"><option value="">-- Lọc nhóm --</option></select>
+        <select id="alpha"><option value="">Sắp xếp</option><option value="az">A → Z</option><option value="za">Z → A</option></select>
+      </div>
+
+      <div style="margin-top:8px" class="small">Bấm vào 1 nhóm để xem chi tiết, hoặc dùng nút "Hiển thị nhóm gợi ý" sau khi gợi ý.</div>
+      <div style="margin-top:8px">
+        <button id="showSuggested" title="Hiển thị các nhóm thuốc được gợi ý">Hiển thị nhóm gợi ý</button>
+        <button id="clearFilter">Bỏ lọc</button>
+      </div>
+
+      <div class="list" id="groupList" aria-live="polite"></div>
+    </aside>
+
+    <!-- RIGHT: SURVEY + SUGGESTION -->
+    <main>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h2>Phiếu khảo sát & Gợi ý thuốc</h2>
+          <div class="small">Thông tin sẽ được xuất ra file Excel (CSV) hoặc in ra PDF.</div>
+        </div>
+
+        <form id="survey" onsubmit="return false;">
+          <section style="margin-top:12px">
+            <h3>1. Thông tin cá nhân (tùy chọn)</h3>
+            <label class="small">Họ và tên: <input type="text" id="name" placeholder="Nguyễn Văn A" /></label>
+            <label class="small">Tuổi: <input type="number" id="age" min="0" max="120" /></label>
+            <label class="small">Giới tính:
+              <label class="inline"><input type="radio" name="gender" value="Nam">Nam</label>
+              <label class="inline"><input type="radio" name="gender" value="Nữ">Nữ</label>
+              <label class="inline"><input type="radio" name="gender" value="Khác">Khác</label>
+            </label>
+            <label class="small">Cân nặng (kg): <input type="number" id="weight" /></label>
+          </section>
+
+          <section style="margin-top:10px">
+            <h3>2. Tình trạng sức khỏe hiện tại (chọn nhiều)</h3>
+            <div class="symptoms" id="symptomsBox" role="group" aria-label="Danh sách triệu chứng"></div>
+          </section>
+
+          <section style="margin-top:10px">
+            <h3>3. Triệu chứng đã kéo dài bao lâu?</h3>
+            <label class="inline"><input type="radio" name="duration" value="Dưới 1 ngày">Dưới 1 ngày</label>
+            <label class="inline"><input type="radio" name="duration" value="1–3 ngày">1–3 ngày</label>
+            <label class="inline"><input type="radio" name="duration" value="Trên 3 ngày">Trên 3 ngày</label>
+          </section>
+
+          <section style="margin-top:10px">
+            <h3>4. Bạn đã dùng thuốc trước khi đến nhà thuốc chưa?</h3>
+            <label class="inline"><input type="radio" name="used" value="Chưa">Chưa</label>
+            <label class="inline"><input type="radio" name="used" value="Có">Có</label>
+            <label class="small">Tên thuốc (nếu có): <input type="text" id="usedDrug" placeholder="VD: Paracetamol" /></label>
+          </section>
+
+          <section style="margin-top:10px">
+            <h3>5. Bạn có bệnh lý nền không?</h3>
+            <div class="symptoms" id="diseasesBox"></div>
+          </section>
+
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+            <button type="button" id="btnSuggest" class="primary">Gợi ý thuốc</button>
+            <button type="button" id="btnClear">Xóa phiếu</button>
+            <button type="button" id="btnExportSurvey">Xuất khảo sát (CSV)</button>
+            <button type="button" id="btnPrint">Xem trước in</button>
+          </div>
+        </form>
+
+        <div id="suggestions" class="result" style="display:none"></div>
+
+        <!-- printable area (cloned into new window when print) -->
+        <div id="printContent" class="print-area"></div>
+      </div>
+    </main>
+  </div>
+
+  <footer style="margin-top:12px;text-align:center;color:var(--muted);font-size:13px">
+    © Nhà thuốc thông minh — Thông tin chỉ mang tính tham khảo. Hỏi dược sĩ/bác sĩ trước khi dùng thuốc.
+  </footer>
+
+<script>
+/* ========== DATA: CATALOG + SYMPTOMS + SUGGESTION MAP ========== */
+const catalog = [
+{group: "Kháng sinh - Penicillin & Cephalosporin", ingredients: "Ampicillin, Amoxicillin, Klamentin, Cefalexin, Cefuroxim, Cefixim, Ceftriaxon, Cefotaxim, Cefoperazon, Cefepim"},
+{group: "Kháng sinh - Macrolid", ingredients: "Erythromycin, Clarithromycin, Azithromycin, Spiramycin"},
+{group: "Kháng sinh - Quinolon", ingredients: "Ciprofloxacin, Levofloxacin, Ofloxacin, Moxifloxacin"},
+{group: "Kháng sinh - Aminoglycosid", ingredients: "Streptomycin, Gentamicin, Amikacin"},
+{group: "Kháng sinh - Kháng đơn bào nguyên sinh", ingredients: "Metronidazol, Tinidazol"},
+{group: "Kháng virus", ingredients: "Lamivudin, Ribavirin, Acyclovir, Valacyclovir, Tenofovir, Oseltamivir"},
+{group: "Kháng nấm", ingredients: "Clotrimazole, Ketoconazole, Terbinafine, Miconazole, Itraconazole, Fluconazole, Nystatin"},
+{group: "NSAID", ingredients: "Aspirin, Diclofenac, Indomethacin, Ibuprofen, Naproxen, Meloxicam, Piroxicam, Celecoxib, Etoricoxib, Nimesulid"},
+{group: "Giảm đau - Hạ sốt", ingredients: "Paracetamol"},
+{group: "Giảm đau gây nghiện (hạn chế)", ingredients: "Tramadol, Codein"},
+{group: "Tim mạch - ACEi", ingredients: "Enalapril, Captopril, Lisinopril, Perindopril"},
+{group: "Tim mạch - ARB", ingredients: "Losartan, Valsartan, Telmisartan, Olmesartan, Irbesartan, Candesartan"},
+{group: "Tim mạch - Beta-blocker", ingredients: "Atenolol, Bisoprolol, Metoprolol, Propranolol, Carvedilol, Nebivolol"},
+{group: "Tim mạch - CCB", ingredients: "Amlodipine, Nifedipine, Felodipine, Diltiazem, Verapamil"},
+{group: "Kháng kết tập tiểu cầu", ingredients: "Aspirin 81, Clopidogrel, Ticagrelor"},
+{group: "Trợ tim", ingredients: "Digoxin"},
+{group: "Statin", ingredients: "Simvastatin, Atorvastatin, Rosuvastatin, Pravastatin, Fluvastatin"},
+{group: "Fibrat", ingredients: "Fenofibrat, Ciprofibrat, Bezafibrat"},
+{group: "Nhựa gắn acid mật", ingredients: "Cholestyramin, Colestipol, Colesevelam"},
+{group: "Khác - hạ lipid", ingredients: "Ezetimib, Omega-3"},
+{group: "Lợi tiểu - Quai", ingredients: "Furosemid, Torsemide, Bumetanide"},
+{group: "Lợi tiểu - Thiazid", ingredients: "Hydrochlorothiazide, Indapamid, Metolazone, Chlorthalidone"},
+{group: "Lợi tiểu - Kháng aldosteron", ingredients: "Spironolactone, Eplerenone"},
+{group: "Lợi tiểu - Giữ kali khác", ingredients: "Amiloride, Triamterene"},
+{group: "Lợi tiểu - Thẩm thấu", ingredients: "Manitol"},
+{group: "Lợi tiểu - Ức chế CA", ingredients: "Acetazolamide"},
+{group: "Trung hòa acid", ingredients: "Phosphalugel, Gaviscon, Yumangel, Trimafort, Maalox"},
+{group: "Kháng H2", ingredients: "Cimetidin, Ranitidin, Famotidin"},
+{group: "PPI", ingredients: "Omeprazol, Esomeprazol, Lansoprazol, Pantoprazol, Rabeprazol"},
+{group: "Bảo vệ niêm mạc", ingredients: "Sucralfat, Misoprostol, Bismuth"},
+{group: "Chống nôn", ingredients: "Metoclopramid, Domperidon, Ondansetron, Granisetron, Scopolamin"},
+{group: "Chống đầy hơi", ingredients: "Simethicon, NaHCO3, Dimenhydrinat"},
+{group: "Chống tiêu chảy", ingredients: "Loperamid, Diphenoxylat, Smecta, Oresol, Berberin"},
+{group: "Men vi sinh", ingredients: "Enterogermina, Biosubtyl, Lactomin, Probio"},
+{group: "Tẩy giun sán", ingredients: "Albendazol, Mebendazol, Thiabendazol, Praziquantel, Niclosamid, Ivermectin"},
+{group: "ĐTĐ - Sulfonylurea", ingredients: "Glimepiride, Gliclazide, Glipizide, Glyburide, Tolbutamide"},
+{group: "ĐTĐ - Biguanid", ingredients: "Metformin"},
+{group: "ĐTĐ - Ức chế α-glucosidase", ingredients: "Acarbose, Miglitol"},
+{group: "ĐTĐ - TZD", ingredients: "Pioglitazone, Rosiglitazone"},
+{group: "ĐTĐ - Glinide", ingredients: "Repaglinide"},
+{group: "ĐTĐ - Ức chế DPP-4", ingredients: "Sitagliptin, Vildagliptin, Saxagliptin, Linagliptin"},
+{group: "ĐTĐ - Đồng vận GLP-1", ingredients: "Liraglutide, Exenatide, Semaglutide"},
+{group: "Insulin", ingredients: "Regular, Lispro, Aspart, Glargine, Detemir"},
+{group: "Corticoid", ingredients: "Hydrocortisone, Prednisolone, Methylprednisolone, Triamcinolone, Dexamethasone, Budesonide, Fluticasone, Beclomethasone, Betamethasone, Clobetasol"},
+{group: "Thuốc tránh thai & hormon", ingredients: "Rigevidon, Avalo, Marvelon, Drospirenone, Postinor 2, Mifepristone, Progesteron, Estradiol"},
+{group: "Vitamin tổng hợp", ingredients: "Arovit, Berocca, Enervon, Redoxon, Cebion, Ostelin D3, Evion"},
+{group: "Khoáng chất", ingredients: "Calcium, Magnesium, Zinc, Iron, Selenium"},
+{group: "Ức chế ho trung ương", ingredients: "Dextromethorphan, Codein"},
+{group: "Long đờm - tiêu nhầy", ingredients: "Bromhexin, Ambroxol, Acetylcystein, Carbocistein, Guaifenesin"},
+{group: "Thuốc ho thảo dược & phối hợp", ingredients: "Eugica, Prospan, HoAstex"},
+{group: "Kháng histamin H1", ingredients: "Chlorpheniramin, Loratadin, Desloratadin, Cetirizin, Levocetirizin, Fexofenadin"},
+{group: "Kháng dị Leucotrien", ingredients: "Montelukast"},
+{group: "Sát khuẩn - dùng ngoài", ingredients: "Oxy già, Cồn 70°, Povidon-iod, Nước muối sinh lý, Chlorhexidin, Benzalkonium"},
+{group: "Thuốc co mạch mũi (ngắn hạn)", ingredients: "Naphazolin, Xylometazolin, Oxymetazolin, Phenylephrin"},
+{group: "Sát khuẩn họng", ingredients: "Povidon-iod, Benzalkonium chloride, Hexetidin, Chlorhexidin, Benzydamin, Cetylpyridinium chloride"},
+{group: "Xịt họng corticoid", ingredients: "Beclomethason dipropionat, Budesonid, Fluticason propionat, Mometason furoat"}
+];
+
+const symptoms = [
+  "Ho khan","Ho có đờm","Sổ mũi, nghẹt mũi","Sốt, đau người","Đau rát họng, khó nuốt",
+  "Đau đầu, căng thẳng","Đau dạ dày, ợ chua","Buồn nôn, nôn ói","Táo bón","Tiếu rát, buốt",
+  "Đau nhức cơ xương khớp","Dị ứng, ngứa, nổi mẩn","Tiêu chảy","Trào ngược dạ dày – GERD",
+  "Viêm loét dạ dày tá tràng","Nấm da, nấm móng","Bệnh trĩ","Mất ngủ, lo âu nhẹ",
+  "Mệt mỏi, niêm nhạt","Chuột rút về đêm"
+];
+
+const diseases = [
+  "Tăng huyết áp","Đái tháo đường","Bệnh tim mạch","Rối loạn mỡ máu","Hen phế quản",
+  "Bệnh phổi tắc nghẽn mạn tính (COPD)","Bệnh gan (viêm gan, xơ gan…)","Bệnh thận mạn",
+  "Rối loạn tuyến giáp","Ung thư","Rối loạn tâm thần / trầm cảm / lo âu",
+  "Bệnh xương khớp mạn tính","Bệnh lý dạ dày – tá tràng mạn","Khác"
+];
+
+const suggestionMap = {
+  "Ho khan": {disease:"Viêm họng, viêm phế quản nhẹ, cảm cúm", groups:["Ức chế ho (Codein, Dextromethorphan)","Kháng histamin H1","Kháng sinh nếu bội nhiễm"], mapGroups:["Ức chế ho trung ương","Kháng histamin H1","Kháng sinh - Penicillin & Cephalosporin","Kháng sinh - Macrolid"]},
+  "Ho có đờm": {disease:"Viêm phế quản, viêm đường hô hấp", groups:["Long đờm (Bromhexin, Ambroxol, Acetylcystein)","Giảm ho khi cần","Kháng sinh nếu đờm mủ"], mapGroups:["Long đờm - tiêu nhầy","Kháng sinh - Penicillin & Cephalosporin"]},
+  "Sổ mũi, nghẹt mũi": {disease:"Cảm lạnh, viêm mũi dị ứng, viêm xoang", groups:["Kháng histamin H1","Thuốc co mạch mũi (ngắn hạn)","Kháng viêm"], mapGroups:["Kháng histamin H1","Thuốc co mạch mũi (ngắn hạn)"]},
+  "Sốt, đau người": {disease:"Cảm cúm, nhiễm siêu vi", groups:["Hạ sốt – giảm đau (Paracetamol, Ibuprofen)","Bù nước điện giải"], mapGroups:["Giảm đau - Hạ sốt","NSAID"]},
+  "Đau rát họng, khó nuốt": {disease:"Viêm họng, viêm amidan", groups:["Giảm đau – hạ sốt","Kháng viêm (NSAID)","Sát khuẩn họng","Kháng sinh nếu viêm mủ"], mapGroups:["Giảm đau - Hạ sốt","Chống nôn","Sát khuẩn họng","Kháng sinh - Penicillin & Cephalosporin"]},
+  "Đau đầu, căng thẳng": {disease:"Đau nửa đầu, căng thẳng thần kinh", groups:["Giảm đau – hạ sốt (Paracetamol, Ibuprofen)","Thảo dược an thần"], mapGroups:["Giảm đau - Hạ sốt","NSAID"]},
+  "Đau dạ dày, ợ chua": {disease:"Viêm loét dạ dày, trào ngược", groups:["PPI (Omeprazol, Esomeprazol)","Kháng H2 (Famotidin)","Trung hòa acid"], mapGroups:["PPI","Kháng H2","Trung hòa acid"]},
+  "Buồn nôn, nôn ói": {disease:"Rối loạn tiêu hóa, trào ngược, say xe", groups:["Chống nôn (Metoclopramid, Domperidon, Ondansetron)","Chống say"], mapGroups:["Chống nôn"]},
+  "Táo bón": {disease:"Chế độ ăn ít chất xơ, rối loạn tiêu hóa", groups:["Thuốc nhuận tràng (Lactulose, Sorbitol)","Men vi sinh"], mapGroups:["Men vi sinh"]},
+  "Tiếu rát, buốt": {disease:"Nhiễm khuẩn tiết niệu", groups:["Kháng sinh (Cefuroxim, Ciprofloxacin…)","Giảm đau niệu"], mapGroups:["Kháng sinh - Quinolon","Kháng sinh - Penicillin & Cephalosporin"]},
+  "Đau nhức cơ xương khớp": {disease:"Thoái hóa khớp, viêm khớp, đau cơ", groups:["NSAID (Diclofenac, Meloxicam, Ibuprofen)","Thuốc giãn cơ"], mapGroups:["NSAID"]},
+  "Dị ứng, ngứa, nổi mẩn": {disease:"Phản ứng dị ứng, viêm mũi dị ứng", groups:["Kháng histamin H1 (Loratadin, Cetirizin)","Corticoid tại chỗ nếu nặng"], mapGroups:["Kháng histamin H1","Corticoid"]},
+  "Tiêu chảy": {disease:"Nhiễm khuẩn nhẹ, rối loạn tiêu hóa, mất nước nhẹ", groups:["Oresol","Smecta","Berberin","Loperamid","Men vi sinh"], mapGroups:["Chống tiêu chảy","Men vi sinh"]},
+  "Trào ngược dạ dày – GERD": {disease:"Trào ngược thực quản, viêm dạ dày", groups:["PPI","Kháng H2","Trung hòa acid"], mapGroups:["PPI","Kháng H2","Trung hòa acid"]},
+  "Viêm loét dạ dày tá tràng": {disease:"Viêm loét, có thể nhiễm HP", groups:["PPI","Sucralfat","Bismuth","Kháng sinh nếu có HP"], mapGroups:["PPI","Bảo vệ niêm mạc"]},
+  "Nấm da, nấm móng": {disease:"Nhiễm nấm ngoài da (Candida, Dermatophytes)", groups:["Clotrimazole, Ketoconazole, Terbinafine","Nystatin"], mapGroups:["Kháng nấm"]},
+  "Bệnh trĩ": {disease:"Trĩ nội, trĩ ngoại", groups:["Thuốc đặt trĩ (Proctolog)","Daflon","Thuốc làm mềm phân"], mapGroups:[]},
+  "Mất ngủ, lo âu nhẹ": {disease:"Rối loạn giấc ngủ, stress", groups:["Melatonin, thảo dược"], mapGroups:[]},
+  "Mệt mỏi, niêm nhạt": {disease:"Thiếu sắt", groups:["Sắt, Vitamin B12, Acid folic"], mapGroups:["Khoáng chất","Vitamin tổng hợp"]},
+  "Chuột rút về đêm": {disease:"Thiếu canxi", groups:["Calcium, Vitamin D3"], mapGroups:["Khoáng chất"]}
+};
+
+/* ========== RENDER CATALOG ========== */
+const groupList = document.getElementById('groupList');
+const groupFilter = document.getElementById('groupFilter');
+const q = document.getElementById('q');
+
+function renderCatalog(data){
+  groupList.innerHTML = '';
+  data.forEach(item=>{
+    const el = document.createElement('div');
+    el.className = 'group';
+    el.dataset.group = item.group;
+    el.innerHTML = `<h3>${item.group}</h3><p>${item.ingredients.split(',').slice(0,8).join(', ')}${item.ingredients.split(',').length>8?' ...':''}</p>`;
+    el.addEventListener('click', ()=> showDetail(item));
+    groupList.appendChild(el);
+  });
+  // also fill table filter select
+}
+function populateFilter(){
+  groupFilter.innerHTML = '<option value="">-- Lọc nhóm --</option>' + catalog.map(c=>`<option value="${c.group}">${c.group}</option>`).join('');
+}
+function showDetail(item){
+  alert(item.group + "\\n\\n• " + item.ingredients.split(',').map(s=>s.trim()).join('\\n• ') + "\\n\\n(Lưu ý: kiểm tra nhãn & hỏi dược sĩ)");
+}
+populateFilter();
+renderCatalog(catalog);
+
+function applyFilter(){
+  let out = catalog.slice();
+  const term = q.value.trim().toLowerCase();
+  const groupVal = groupFilter.value;
+  const alpha = document.getElementById('alpha').value;
+  if(groupVal) out = out.filter(i=>i.group===groupVal);
+  if(term) out = out.filter(i => i.group.toLowerCase().includes(term) || i.ingredients.toLowerCase().includes(term));
+  if(alpha==='az') out.sort((a,b)=>a.group.localeCompare(b.group));
+  if(alpha==='za') out.sort((a,b)=>b.group.localeCompare(a.group));
+  renderCatalog(out);
+}
+q.addEventListener('input', applyFilter);
+document.getElementById('alpha').addEventListener('change', applyFilter);
+groupFilter.addEventListener('change', applyFilter);
+document.getElementById('clearFilter').addEventListener('click', ()=>{ groupFilter.value=''; q.value=''; applyFilter(); clearHighlights(); });
+
+/* ========== RENDER SYMPTOMS & DISEASES ========== */
+const sBox = document.getElementById('symptomsBox');
+symptoms.forEach(s => {
+  const id = 's_'+s.replace(/[^a-z0-9]/ig,'_');
+  sBox.innerHTML += `<label class="inline"><input type="checkbox" value="${s}" id="${id}"> <span>${s}</span></label>`;
+});
+
+const dBox = document.getElementById('diseasesBox');
+diseases.forEach(d => {
+  const id = 'd_'+d.replace(/[^a-z0-9]/ig,'_');
+  dBox.innerHTML += `<label class="inline"><input type="checkbox" value="${d}" id="${id}"> <span>${d}</span></label>`;
+});
+
+/* ========== SUGGESTION LOGIC ========== */
+const suggestionsDiv = document.getElementById('suggestions');
+let currentSuggestedGroups = []; // group names to highlight/filter
+
+document.getElementById('btnSuggest').addEventListener('click', ()=> {
+  const checked = Array.from(document.querySelectorAll('#symptomsBox input:checked')).map(i=>i.value);
+  if(checked.length===0){ alert('Vui lòng chọn ít nhất một triệu chứng.'); return; }
+
+  // build suggestion table
+  let html = '<h3>Kết quả gợi ý (tham khảo)</h3>';
+  html += '<table style="width:100%;border-collapse:collapse"><tr><th>Triệu chứng</th><th>Suy luận bệnh</th><th>Nhóm thuốc gợi ý</th></tr>';
+  const groupsToHighlight = new Set();
+  checked.forEach(s=>{
+    const info = suggestionMap[s] || {disease:'Chưa có dữ liệu', groups:[], mapGroups:[]};
+    html += `<tr><td style="padding:8px;border-bottom:1px dashed #e6eef8">${s}</td><td style="padding:8px;border-bottom:1px dashed #e6eef8">${info.disease}</td><td style="padding:8px;border-bottom:1px dashed #e6eef8">${(info.groups||[]).join('; ')}</td></tr>`;
+    (info.mapGroups||[]).forEach(g=>groupsToHighlight.add(g));
+  });
+  html += '</table>';
+  html += '<div style="margin-top:8px;font-size:13px;color:#333">Lưu ý: Thông tin chỉ mang tính tham khảo. Kiểm tra chống chỉ định/tương tác trước khi cấp phát. Một số thuốc cần kê đơn.</div>';
+  // actions: show chips, highlight left list
+  suggestionsDiv.innerHTML = html + `<div style="margin-top:10px"><span class="filter-chip">${Array.from(groupsToHighlight).slice(0,6).join('</span> <span class="filter-chip">')}</span></div>`;
+  suggestionsDiv.style.display = 'block';
+  // highlight left list items
+  clearHighlights();
+  currentSuggestedGroups = Array.from(groupsToHighlight);
+  currentSuggestedGroups.forEach(gname => {
+    const node = Array.from(document.querySelectorAll('#groupList .group')).find(el=>el.dataset.group === gname);
+    if(node){
+      node.classList.add('highlight');
+      // scroll first into view
+      node.scrollIntoView({behavior:'smooth', block:'center'});
+      // flash (animation)
+      node.animate([{transform:'scale(1)'},{transform:'scale(1.02)'},{transform:'scale(1)'}], {duration:600});
+    }
+  });
+});
+
+document.getElementById('showSuggested').addEventListener('click', ()=>{
+  if(!currentSuggestedGroups.length){
+    alert('Chưa có nhóm được gợi ý. Hãy bấm "Gợi ý thuốc" trước.');
+    return;
+  }
+  // filter catalog to show only suggested groups
+  const filtered = catalog.filter(c => currentSuggestedGroups.includes(c.group));
+  if(filtered.length===0){
+    alert('Không tìm thấy nhóm tương ứng trong danh mục.');
+    return;
+  }
+  renderCatalog(filtered);
+});
+
+document.getElementById('clearFilter').addEventListener('click', ()=> {
+  renderCatalog(catalog);
+  clearHighlights();
+  currentSuggestedGroups = [];
+});
+
+function clearHighlights(){
+  document.querySelectorAll('#groupList .group.highlight').forEach(n=>n.classList.remove('highlight'));
+}
+
+/* ========== EXPORT SURVEY -> CSV (Excel) ========== */
+function csvEscape(val){
+  if(val==null) return '';
+  const s = String(val).replace(/"/g,'""');
+  if(s.search(/,|\n|"/)>=0) return `"${s}"`;
+  return s;
+}
+
+document.getElementById('btnExportSurvey').addEventListener('click', ()=> {
+  exportSurveyCSV();
+});
+document.getElementById('exportCSV').addEventListener('click', ()=> {
+  exportSurveyCSV();
+});
+function exportSurveyCSV(){
+  const name = document.getElementById('name').value || '';
+  const age = document.getElementById('age').value || '';
+  const weight = document.getElementById('weight').value || '';
+  const gender = (document.querySelector('input[name="gender"]:checked')||{}).value || '';
+  const duration = (document.querySelector('input[name="duration"]:checked')||{}).value || '';
+  const used = (document.querySelector('input[name="used"]:checked')||{}).value || '';
+  const usedDrug = document.getElementById('usedDrug').value || '';
+  const symptomsChecked = Array.from(document.querySelectorAll('#symptomsBox input:checked')).map(i=>i.value).join('; ');
+  const diseasesChecked = Array.from(document.querySelectorAll('#diseasesBox input:checked')).map(i=>i.value).join('; ');
+  const suggested = (document.getElementById('suggestions').innerText||'').replace(/\n/g,' ').slice(0,2000);
+
+  const headers = ['Họ và tên','Tuổi','Giới tính','Cân nặng (kg)','Triệu chứng','Thời gian kéo dài','Đã dùng thuốc trước','Thuốc đã dùng','Bệnh lý nền','Gợi ý (tóm tắt)'];
+  const row = [name,age,gender,weight,symptomsChecked,duration,used,usedDrug,diseasesChecked,suggested];
+
+  let csv = headers.map(csvEscape).join(',') + '\n' + row.map(csvEscape).join(',') + '\n';
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download = `khaosat_nhathuoc_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+/* ========== PRINT (VIEW IN / PDF) ========== */
+document.getElementById('printBtn').addEventListener('click', ()=> window.print());
+document.getElementById('btnPrint').addEventListener('click', ()=> {
+  preparePrintContent();
+  window.print();
+});
+
+function preparePrintContent(){
+  // create printable summary and inject into printContent
+  const printArea = document.getElementById('printContent');
+  const name = document.getElementById('name').value || '';
+  const age = document.getElementById('age').value || '';
+  const weight = document.getElementById('weight').value || '';
+  const gender = (document.querySelector('input[name="gender"]:checked')||{}).value || '';
+  const duration = (document.querySelector('input[name="duration"]:checked')||{}).value || '';
+  const used = (document.querySelector('input[name="used"]:checked')||{}).value || '';
+  const usedDrug = document.getElementById('usedDrug').value || '';
+  const symptomsChecked = Array.from(document.querySelectorAll('#symptomsBox input:checked')).map(i=>i.value);
+  const diseasesChecked = Array.from(document.querySelectorAll('#diseasesBox input:checked')).map(i=>i.value);
+  const suggestionHTML = document.getElementById('suggestions').innerHTML || '';
+
+  let html = `<div style="padding:20px;font-family:Arial;color:#03263f">
+    <h2 style="margin:0 0 8px 0">Phiếu khảo sát nhà thuốc</h2>
+    <div style="margin-bottom:8px"><strong>Họ tên:</strong> ${escapeHtml(name)} &nbsp;&nbsp; <strong>Tuổi:</strong> ${escapeHtml(age)} &nbsp;&nbsp; <strong>Giới tính:</strong> ${escapeHtml(gender)}</div>
+    <div style="margin-bottom:8px"><strong>Cân nặng:</strong> ${escapeHtml(weight)} kg</div>
+    <div style="margin-bottom:8px"><strong>Triệu chứng:</strong> ${escapeHtml(symptomsChecked.join('; '))}</div>
+    <div style="margin-bottom:8px"><strong>Thời gian:</strong> ${escapeHtml(duration)} &nbsp;&nbsp; <strong>Đã dùng thuốc:</strong> ${escapeHtml(used)} &nbsp; ${escapeHtml(usedDrug)}</div>
+    <div style="margin-bottom:8px"><strong>Bệnh lý nền:</strong> ${escapeHtml(diseasesChecked.join('; '))}</div>
+    <hr/>
+    <div><strong>Gợi ý (tham khảo):</strong></div>
+    <div>${suggestionHTML}</div>
+    <hr/>
+    <div style="font-size:12px;color:#666">Ghi chú: Tài liệu in chỉ mang tính tham khảo. Không thay thế tư vấn y tế chuyên môn.</div>
+  </div>`;
+  printArea.innerHTML = html;
+}
+
+// escape simple html
+function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ========== CLEAR FORM ========== */
+document.getElementById('btnClear').addEventListener('click', ()=>{
+  document.getElementById('survey').reset();
+  document.getElementById('suggestions').style.display='none';
+  document.getElementById('suggestions').innerHTML='';
+  clearHighlights();
+  currentSuggestedGroups = [];
+});
+
+/* ========== EXPORT JSON (catalog) ========== */
+document.getElementById('exportJson').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify(catalog,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='danhmuc_thuoc.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+});
+
+/* ========== Accessibility: Enter to search ========== */
+q.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); applyFilter(); } });
+
+/* ========== On page ready: render initial state ========== */
+renderCatalog(catalog);
+</script>
+</body>
+</html>
